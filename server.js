@@ -10,14 +10,20 @@ const hostname = process.env.HOSTNAME || '0.0.0.0';
 const port = parseInt(process.env.PORT, 10) || 3000;
 const httpsPort = parseInt(process.env.HTTPS_PORT, 10) || 443;
 
+// Cross-platform path handling
+const isWindows = process.platform === 'win32';
+const defaultSslBasePath = isWindows 
+  ? path.join(process.cwd(), 'ssl') 
+  : '/home/nhsortag/ssl/sorokids';
+
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  // Check if SSL certificates exist
-  const sslKeyPath = process.env.SSL_KEY_PATH || '/home/nhsortag/ssl/sorokids/private.key';
-  const sslCertPath = process.env.SSL_CERT_PATH || '/home/nhsortag/ssl/sorokids/certificate.crt';
-  const sslCaPath = process.env.SSL_CA_PATH || '/home/nhsortag/ssl/sorokids/ca_bundle.crt';
+  // Check if SSL certificates exist (cross-platform)
+  const sslKeyPath = process.env.SSL_KEY_PATH || path.join(defaultSslBasePath, 'private.key');
+  const sslCertPath = process.env.SSL_CERT_PATH || path.join(defaultSslBasePath, 'certificate.crt');
+  const sslCaPath = process.env.SSL_CA_PATH || path.join(defaultSslBasePath, 'ca_bundle.crt');
 
   const hasSSL = fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath);
 
