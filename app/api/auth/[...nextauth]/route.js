@@ -72,6 +72,7 @@ export const authOptions = {
                 name: user.name,
                 avatar: user.image,
                 password: '',
+                role: user.email === 'nqh2610@gmail.com' ? 'admin' : 'student',
               },
             });
           }
@@ -87,12 +88,37 @@ export const authOptions = {
         token.id = user.id;
         token.username = user.username;
       }
+      
+      // Fetch role from database
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { role: true, id: true, username: true }
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.id = dbUser.id;
+          token.username = dbUser.username;
+        }
+      } catch (e) {}
+      
+      // Admin email override
+      if (token.email === 'nqh2610@gmail.com') {
+        token.role = 'admin';
+      }
+      
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id;
         session.user.username = token.username;
+        session.user.role = token.role || 'student';
+        
+        // Admin email override
+        if (session.user.email === 'nqh2610@gmail.com') {
+          session.user.role = 'admin';
+        }
       }
       return session;
     },

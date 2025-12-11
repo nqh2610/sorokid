@@ -25,6 +25,11 @@ model User {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   totalEXP                Int                      @default(0)
+  tier                    String                   @default("free")
+  tierPurchasedAt         DateTime?
+  isProfileComplete       Boolean                  @default(true)
+  certificateProgress     CertificateProgress[]
+  certificates            Certificate[]
   challengeParticipations ChallengeParticipation[]
   challenges              Challenge[]              @relation("ChallengeCreator")
   competeResults          CompeteResult[]
@@ -32,6 +37,7 @@ model User {
   friendOf                Friend[]                 @relation("FriendOf")
   friends                 Friend[]                 @relation("UserFriends")
   notifications           Notification[]
+  paymentOrders           PaymentOrder[]
   progress                Progress[]
   purchases               Purchase[]
   achievements            UserAchievement[]
@@ -281,4 +287,78 @@ model CompeteResult {
   @@unique([userId, arenaId])
   @@index([arenaId, correct, totalTime])
   @@map("compete_results")
+}
+
+// ==================== PAYMENT SYSTEM ====================
+
+model PaymentOrder {
+  id              String    @id @default(uuid())
+  orderCode       String    @unique
+  userId          String
+  tier            String
+  amount          Int
+  status          String    @default("pending")
+  transactionId   String?
+  paidAmount      Int?
+  paidAt          DateTime?
+  expiresAt       DateTime
+  note            String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  previousTier    String?
+  transactionType String    @default("new")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([orderCode])
+  @@index([status])
+  @@map("payment_orders")
+}
+
+// ==================== CERTIFICATE SYSTEM ====================
+
+model Certificate {
+  id            String   @id @default(uuid())
+  userId        String
+  certType      String
+  recipientName String
+  honorTitle    String
+  isExcellent   Boolean  @default(false)
+  code          String   @unique
+  issuedAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@map("certificates")
+}
+
+model CertificateProgress {
+  id                 String    @id
+  userId             String
+  certType           String
+  lessonsProgress    String    @db.Text
+  practiceProgress   String    @db.Text
+  competeProgress    String    @db.Text
+  mentalMathProgress String    @db.Text
+  totalRequired      Int
+  totalCompleted     Int       @default(0)
+  percentComplete    Float     @default(0)
+  isCompleted        Boolean   @default(false)
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  flashProgress      String?   @db.Text
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, certType])
+  @@map("certificate_progress")
+}
+
+model SystemSettings {
+  key       String   @id
+  value     String   @db.LongText
+  updatedAt DateTime
+
+  @@map("system_settings")
 }

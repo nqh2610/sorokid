@@ -15,14 +15,14 @@ export default function HomePage() {
       icon: <Gamepad2 className="w-8 h-8" />,
       title: "Game hóa học tập",
       description: "Chơi mà học, học mà chơi! Hệ thống điểm thưởng, sao, kim cương khiến việc học thú vị như chơi game.",
-      color: "from-purple-500 to-pink-500",
+      color: "from-blue-500 to-violet-500",
       emoji: "🎮"
     },
     {
       icon: <BookOpen className="w-8 h-8" />,
       title: "Bài học khoa học",
       description: "Lộ trình từ cơ bản đến nâng cao, giúp học sinh từ chưa biết gì đến thành thạo tính nhẩm Soroban.",
-      color: "from-blue-500 to-cyan-500",
+      color: "from-violet-500 to-purple-500",
       emoji: "📚"
     },
     {
@@ -43,14 +43,14 @@ export default function HomePage() {
       icon: <Target className="w-8 h-8" />,
       title: "Nhiệm vụ hằng ngày",
       description: "Hoàn thành nhiệm vụ để nhận thưởng! Hệ thống quest giúp học sinh duy trì thói quen học tập đều đặn.",
-      color: "from-green-500 to-emerald-500",
+      color: "from-pink-500 to-rose-500",
       emoji: "🎯"
     },
     {
       icon: <BarChart3 className="w-8 h-8" />,
       title: "Theo dõi tiến độ",
       description: "Phụ huynh nắm rõ con học đến đâu, đạt được gì. Đo lường độ chăm chỉ, tốc độ và độ chính xác.",
-      color: "from-indigo-500 to-purple-500",
+      color: "from-cyan-500 to-blue-500",
       emoji: "📊"
     }
   ];
@@ -59,34 +59,34 @@ export default function HomePage() {
     {
       title: "Học sinh",
       description: "Học Soroban qua game thú vị, nhận thưởng khi hoàn thành bài học, thi đấu với bạn bè.",
-      color: "bg-gradient-to-br from-blue-500 to-cyan-500",
+      color: "bg-gradient-to-br from-blue-500 to-violet-500",
       emoji: "👦"
     },
     {
       title: "Phụ huynh", 
       description: "Công cụ kèm con tự học tại nhà. Theo dõi tiến độ, biết con đạt được những gì mỗi ngày.",
-      color: "bg-gradient-to-br from-pink-500 to-rose-500",
+      color: "bg-gradient-to-br from-violet-500 to-purple-500",
       emoji: "👨‍👩‍👧"
     },
     {
       title: "Giáo viên",
       description: "Công cụ dạy học hiện đại, cá nhân hóa cho từng học sinh. Quản lý lớp học dễ dàng.",
-      color: "bg-gradient-to-br from-purple-500 to-indigo-500",
+      color: "bg-gradient-to-br from-pink-500 to-rose-500",
       emoji: "👩‍🏫"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-violet-50 to-pink-50">
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
           <Logo size="md" />
           <div className="flex gap-2 sm:gap-3">
-            <Link href="/login" className="px-4 sm:px-6 py-2 text-sm sm:text-base text-purple-600 font-bold hover:bg-purple-50 rounded-full transition-all">
+            <Link href="/login" className="px-4 sm:px-6 py-2 text-sm sm:text-base text-violet-600 font-bold hover:bg-violet-50 rounded-full transition-all">
               Đăng nhập
             </Link>
-            <Link href="/register" className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg">
+            <Link href="/register" className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 text-white font-bold rounded-full hover:scale-105 transition-all shadow-lg">
               Đăng ký
             </Link>
           </div>
@@ -95,7 +95,7 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-purple-400/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-violet-400/10 to-pink-400/10" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm mb-6">
@@ -104,7 +104,7 @@ export default function HomePage() {
             </div>
             
             <h1 className="text-3xl sm:text-4xl lg:text-6xl font-black mb-4 sm:mb-6 leading-tight">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500">
                 Học Soroban
               </span>
               <br />
@@ -113,11 +113,11 @@ export default function HomePage() {
             
             <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto px-4">
               Ứng dụng học tính nhẩm Soroban dành cho học sinh tiểu học. 
-              <strong className="text-purple-600"> Chơi mà học, học mà chơi!</strong>
+              <strong className="text-violet-600"> Chơi mà học, học mà chơi!</strong>
             </p>
 
             <div className="flex justify-center mb-8 px-4">
-              <Link href="/register" className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full text-lg font-bold shadow-xl hover:shadow-purple-500/30 transform hover:scale-105 transition-all flex items-center justify-center gap-2">
+              <Link href="/register" className="group px-8 py-4 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 text-white rounded-full text-lg font-bold shadow-xl hover:shadow-violet-500/30 transform hover:scale-105 transition-all flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5" />
                 Đăng ký ngay
               </Link>
@@ -178,7 +178,7 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <div key={index} className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-purple-200 hover:-translate-y-1">
+              <div key={index} className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-violet-200 hover:-translate-y-1">
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
                   {feature.icon}
                 </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-purple-50 to-pink-50">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-violet-50 to-pink-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-800 mb-4">
@@ -206,9 +206,9 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { step: "1", title: "Học lý thuyết", desc: "Làm quen với bàn tính Soroban qua bài học sinh động", icon: "📖", color: "bg-blue-500" },
-              { step: "2", title: "Thực hành", desc: "Luyện tập với bài tập từ dễ đến khó", icon: "✍️", color: "bg-green-500" },
-              { step: "3", title: "Luyện tập", desc: "Tăng tốc độ và độ chính xác qua các bài luyện", icon: "🏃", color: "bg-amber-500" },
-              { step: "4", title: "Thi đấu", desc: "Thử thách bản thân, xếp hạng cùng bạn bè", icon: "🏆", color: "bg-purple-500" }
+              { step: "2", title: "Thực hành", desc: "Luyện tập với bài tập từ dễ đến khó", icon: "✍️", color: "bg-violet-500" },
+              { step: "3", title: "Luyện tập", desc: "Tăng tốc độ và độ chính xác qua các bài luyện", icon: "🏃", color: "bg-pink-500" },
+              { step: "4", title: "Thi đấu", desc: "Thử thách bản thân, xếp hạng cùng bạn bè", icon: "🏆", color: "bg-amber-500" }
             ].map((item, index) => (
               <div key={index} className="relative">
                 <div className="bg-white rounded-2xl p-6 shadow-lg text-center h-full">
@@ -243,9 +243,9 @@ export default function HomePage() {
               <div className="space-y-4">
                 {[
                   { icon: <Clock className="w-6 h-6" />, label: "Tốc độ tính toán", desc: "Đo thời gian hoàn thành mỗi bài", color: "text-blue-500" },
-                  { icon: <Target className="w-6 h-6" />, label: "Độ chính xác", desc: "Tỷ lệ trả lời đúng", color: "text-green-500" },
-                  { icon: <TrendingUp className="w-6 h-6" />, label: "Tính chăm chỉ", desc: "Số ngày học liên tiếp (streak)", color: "text-amber-500" },
-                  { icon: <Award className="w-6 h-6" />, label: "Thành tích", desc: "Huy hiệu, level, điểm kinh nghiệm", color: "text-purple-500" }
+                  { icon: <Target className="w-6 h-6" />, label: "Độ chính xác", desc: "Tỷ lệ trả lời đúng", color: "text-violet-500" },
+                  { icon: <TrendingUp className="w-6 h-6" />, label: "Tính chăm chỉ", desc: "Số ngày học liên tiếp (streak)", color: "text-pink-500" },
+                  { icon: <Award className="w-6 h-6" />, label: "Thành tích", desc: "Huy hiệu, level, điểm kinh nghiệm", color: "text-amber-500" }
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-4 bg-gray-50 rounded-xl p-4">
                     <div className={`${item.color} bg-white rounded-lg p-2 shadow-sm`}>{item.icon}</div>
@@ -258,7 +258,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-8 text-white">
+            <div className="bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 rounded-3xl p-8 text-white">
               <h3 className="text-2xl font-bold mb-6">🎁 Hệ thống phần thưởng</h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -280,7 +280,7 @@ export default function HomePage() {
       </section>
 
       {/* User Types */}
-      <section className="py-16 sm:py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-blue-50 to-violet-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-800 mb-4">
@@ -321,7 +321,7 @@ export default function HomePage() {
               { icon: "🧮", title: "Bàn tính ảo", desc: "Không cần mua bàn tính thật, tiện lợi" },
               { icon: "🏠", title: "Tự học tại nhà", desc: "Phụ huynh có thể kèm con học" }
             ].map((item, index) => (
-              <div key={index} className="text-center p-6 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors">
+              <div key={index} className="text-center p-6 bg-gray-50 rounded-2xl hover:bg-violet-50 transition-colors">
                 <div className="text-4xl mb-4">{item.icon}</div>
                 <h3 className="font-bold text-gray-800 mb-2">{item.title}</h3>
                 <p className="text-gray-600 text-sm">{item.desc}</p>
@@ -332,7 +332,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+      <section className="py-16 sm:py-20 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-6">
             🚀 Bắt đầu hành trình Soroban ngay hôm nay!
@@ -341,7 +341,7 @@ export default function HomePage() {
             Đăng ký và khám phá thế giới tính nhẩm thú vị cùng Sorokid
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link href="/register" className="px-8 py-4 bg-white text-purple-600 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all">
+            <Link href="/register" className="px-8 py-4 bg-white text-violet-600 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all">
               Đăng ký ngay
             </Link>
             <Link href="/login" className="px-8 py-4 bg-white/20 backdrop-blur text-white rounded-full text-lg font-bold hover:bg-white/30 transition-all border-2 border-white/50">

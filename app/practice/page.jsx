@@ -87,7 +87,17 @@ const modeInfo = {
   mulDiv: { title: 'Nhân Chia Mix', icon: '🎩', symbol: '×÷', color: 'from-amber-500 to-orange-600' },
   mixed: { title: 'Tứ Phép Thần', icon: '👑', symbol: '∞', color: 'from-indigo-500 to-purple-600' },
   mentalMath: { title: 'Siêu Trí Tuệ', icon: '🧠', symbol: '💭', color: 'from-violet-500 to-fuchsia-600', isMental: true },
+  flashAnzan: { title: 'Tia Chớp', icon: '⚡', symbol: '💫', color: 'from-yellow-500 to-orange-600', isFlash: true },
 };
+
+// Cấu hình các cấp độ Flash Anzan
+const flashLevels = [
+  { id: 'tiaSang', name: 'Tia Sáng', emoji: '✨', color: 'from-yellow-400 to-amber-500', numbers: [3, 4], digits: 1, speed: [2, 2.5], stars: 2 },
+  { id: 'tiaChop', name: 'Tia Chớp', emoji: '⚡', color: 'from-orange-400 to-amber-500', numbers: [5, 6], digits: 1, speed: [1.5, 1.8], stars: 4 },
+  { id: 'samSet', name: 'Sấm Sét', emoji: '🌩️', color: 'from-blue-400 to-cyan-500', numbers: [7, 8], digits: 2, speed: [1, 1.3], stars: 6 },
+  { id: 'baoTo', name: 'Bão Tố', emoji: '🌪️', color: 'from-purple-500 to-indigo-600', numbers: [10, 12], digits: 2, speed: [0.6, 0.8], stars: 8 },
+  { id: 'thanSam', name: 'Thần Sấm', emoji: '👑', color: 'from-rose-500 to-pink-600', numbers: [13, 15], digits: 3, speed: [0.6, 0.8], stars: 10 },
+];
 
 export default function PracticePage() {
   const { status } = useSession();
@@ -114,10 +124,31 @@ export default function PracticePage() {
   const [mentalAnswer, setMentalAnswer] = useState(''); // Đáp án nhập cho mode Siêu Trí Tuệ
   const [mentalSubMode, setMentalSubMode] = useState(null); // Sub-mode cho Siêu Trí Tuệ
   const mentalInputRef = useRef(null);
+  
+  // Flash Anzan states
+  const [flashLevel, setFlashLevel] = useState(null); // Cấp độ Flash Anzan đã chọn
+  const [flashPhase, setFlashPhase] = useState('idle'); // 'idle' | 'countdown' | 'showing' | 'answer' | 'result'
+  const [flashNumbers, setFlashNumbers] = useState([]); // Các số sẽ hiện
+  const [flashCurrentIndex, setFlashCurrentIndex] = useState(0); // Index số đang hiện
+  const [flashAnswer, setFlashAnswer] = useState(''); // Đáp án người dùng nhập
+  const [flashCorrectAnswer, setFlashCorrectAnswer] = useState(0); // Đáp án đúng
+  const [flashCountdown, setFlashCountdown] = useState(3); // Đếm ngược
+  const [flashShowingNumber, setFlashShowingNumber] = useState(null); // Số đang hiện trên màn hình
+  const flashInputRef = useRef(null);
+  const flashTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
+
+  // Cleanup Flash Anzan timeouts
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (problem && result === null) {
@@ -327,6 +358,14 @@ export default function PracticePage() {
       return;
     }
     
+    // Nếu là flashAnzan, cần chọn level trước
+    if (selectedMode === 'flashAnzan') {
+      setMode('flashAnzan');
+      setFlashLevel(null); // Reset để hiện màn chọn level
+      setFlashPhase('idle');
+      return;
+    }
+    
     setMode(selectedMode);
     setProblem(generateProblem(selectedMode, difficulty));
     setSorobanValue(0);
@@ -365,6 +404,177 @@ export default function PracticePage() {
   const getRandomMentalMode = () => {
     const modes = ['addition', 'subtraction', 'multiplication', 'division', 'addSubMixed'];
     return modes[Math.floor(Math.random() * modes.length)];
+  };
+
+  // ================== FLASH ANZAN FUNCTIONS ==================
+  
+  // Tạo số ngẫu nhiên cho Flash Anzan
+  const generateFlashNumbers = (level) => {
+    const config = flashLevels.find(l => l.id === level);
+    if (!config) return [];
+    
+    const count = config.numbers[0] + Math.floor(Math.random() * (config.numbers[1] - config.numbers[0] + 1));
+    const numbers = [];
+    
+    const maxDigit = Math.pow(10, config.digits) - 1;
+    const minDigit = config.digits === 1 ? 1 : Math.pow(10, config.digits - 1);
+    
+    for (let i = 0; i < count; i++) {
+      numbers.push(Math.floor(Math.random() * (maxDigit - minDigit + 1)) + minDigit);
+    }
+    
+    return numbers;
+  };
+  
+  // Bắt đầu Flash Anzan với cấp độ đã chọn
+  const startFlashAnzan = (levelId) => {
+    const config = flashLevels.find(l => l.id === levelId);
+    if (!config) return;
+    
+    setFlashLevel(levelId);
+    setFlashPhase('countdown');
+    setFlashCountdown(3);
+    setFlashAnswer('');
+    setFlashCurrentIndex(0);
+    setFlashShowingNumber(null);
+    
+    const numbers = generateFlashNumbers(levelId);
+    setFlashNumbers(numbers);
+    setFlashCorrectAnswer(numbers.reduce((a, b) => a + b, 0));
+    
+    // Reset session stats cho round mới
+    if (currentChallenge === 1 && challengeResults.length === 0) {
+      setSessionStats({ stars: 0, correct: 0, total: 0, totalTime: 0 });
+      setStreak(0);
+      setMaxStreak(0);
+    }
+    
+    // Bắt đầu đếm ngược
+    let count = 3;
+    const countdownInterval = setInterval(() => {
+      count--;
+      setFlashCountdown(count);
+      if (count === 0) {
+        clearInterval(countdownInterval);
+        // Bắt đầu hiện số
+        setTimeout(() => {
+          setFlashPhase('showing');
+          showFlashNumber(0, numbers, config);
+        }, 500);
+      }
+    }, 1000);
+  };
+  
+  // Hiện số từng cái một
+  const showFlashNumber = (index, numbers, config) => {
+    if (index >= numbers.length) {
+      // Đã hiện hết số, chuyển sang phase trả lời
+      setFlashPhase('answer');
+      setFlashShowingNumber(null);
+      setTimeout(() => flashInputRef.current?.focus(), 100);
+      return;
+    }
+    
+    setFlashCurrentIndex(index);
+    setFlashShowingNumber(numbers[index]);
+    
+    // Tính speed (giây/số)
+    const speed = config.speed[0] + Math.random() * (config.speed[1] - config.speed[0]);
+    
+    flashTimeoutRef.current = setTimeout(() => {
+      setFlashShowingNumber(null);
+      // Hiện số tiếp theo sau khoảng trống nhỏ
+      flashTimeoutRef.current = setTimeout(() => {
+        showFlashNumber(index + 1, numbers, config);
+      }, 100);
+    }, speed * 1000);
+  };
+  
+  // Xử lý submit đáp án Flash Anzan
+  const handleFlashSubmit = async () => {
+    const userAnswer = parseInt(flashAnswer, 10);
+    if (isNaN(userAnswer)) return;
+    
+    const isCorrect = userAnswer === flashCorrectAnswer;
+    const config = flashLevels.find(l => l.id === flashLevel);
+    const starsEarned = isCorrect ? (config?.stars || 2) : 0;
+    
+    setFlashPhase('result');
+    setResult(isCorrect);
+    
+    // Cập nhật stats
+    const newStreak = isCorrect ? streak + 1 : 0;
+    if (newStreak > maxStreak) setMaxStreak(newStreak);
+    setStreak(newStreak);
+    
+    setChallengeResults(prev => [...prev, isCorrect ? 'correct' : 'wrong']);
+    setSessionStats(prev => ({
+      stars: prev.stars + starsEarned,
+      correct: prev.correct + (isCorrect ? 1 : 0),
+      total: prev.total + 1,
+      totalTime: prev.totalTime + (flashNumbers.length * 2) // Ước tính thời gian
+    }));
+    
+    // Hiệu ứng celebration
+    if (isCorrect) {
+      setCelebrationData({
+        text: 'XUẤT SẮC!',
+        emoji: '⚡',
+        starsEarned,
+        multiplier: 1,
+        tierColor: 'from-yellow-400 to-orange-500',
+        tierTextColor: 'text-yellow-400',
+        timeRatio: 0.5
+      });
+      setCelebration('correct');
+    }
+    
+    // Lưu kết quả
+    try {
+      await fetch('/api/exercises', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exerciseType: 'flashAnzan',
+          difficulty: flashLevels.findIndex(l => l.id === flashLevel) + 1,
+          problem: flashNumbers.join(' + '),
+          userAnswer: userAnswer.toString(),
+          correctAnswer: flashCorrectAnswer.toString(),
+          isCorrect,
+          timeTaken: flashNumbers.length * 2
+        })
+      });
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+  
+  // Chuyển câu tiếp theo trong Flash Anzan
+  const nextFlashChallenge = () => {
+    if (currentChallenge >= TOTAL_CHALLENGES) {
+      setGameComplete(true);
+      return;
+    }
+    
+    setCurrentChallenge(prev => prev + 1);
+    setResult(null);
+    setCelebration(null);
+    setCelebrationData(null);
+    
+    // Bắt đầu round mới
+    startFlashAnzan(flashLevel);
+  };
+  
+  // Restart Flash Anzan game
+  const restartFlashGame = () => {
+    setCurrentChallenge(1);
+    setChallengeResults([]);
+    setSessionStats({ stars: 0, correct: 0, total: 0, totalTime: 0 });
+    setStreak(0);
+    setMaxStreak(0);
+    setGameComplete(false);
+    setResult(null);
+    startFlashAnzan(flashLevel);
   };
 
   const handleSorobanChange = (value) => {
@@ -553,6 +763,7 @@ export default function PracticePage() {
   // Lấy thông tin mode hiện tại
   const currentModeInfo = mode ? modeInfo[mode] : null;
   const isMentalMode = mode === 'mentalMath';
+  const isFlashMode = mode === 'flashAnzan';
 
   // Sub-mode info cho Siêu Trí Tuệ
   const mentalSubModes = [
@@ -649,6 +860,388 @@ export default function PracticePage() {
     );
   }
 
+  // ================== FLASH ANZAN SCREENS ==================
+  
+  // Màn hình chọn cấp độ Flash Anzan
+  if (mode === 'flashAnzan' && !flashLevel) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-900 via-orange-900 to-red-900">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setMode(null)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-xl text-white hover:bg-white/20 transition-all"
+            >
+              <ArrowLeft size={18} />
+              <span className="font-medium">Quay lại</span>
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+              <span className="text-3xl">⚡</span> Flash Anzan
+            </h1>
+            <div className="w-24"></div>
+          </div>
+
+          {/* Mô tả */}
+          <div className="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6 text-center">
+            <div className="text-5xl mb-3">🧠</div>
+            <h2 className="text-xl font-bold text-white mb-2">Luyện Tập Flash Anzan</h2>
+            <p className="text-white/80 text-sm">
+              Nhìn số xuất hiện nhanh, ghi nhớ và tính tổng!
+            </p>
+            <div className="flex justify-center items-center gap-6 mt-4 text-white/60 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👀</span>
+                <span>Nhìn số</span>
+              </div>
+              <div>→</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🧠</span>
+                <span>Ghi nhớ</span>
+              </div>
+              <div>→</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✨</span>
+                <span>Tính tổng</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chọn cấp độ */}
+          <div className="mb-4">
+            <h3 className="text-white/80 font-bold text-center mb-4">🎯 Chọn cấp độ thử thách</h3>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {flashLevels.map((level, index) => (
+              <button
+                key={level.id}
+                onClick={() => {
+                  setCurrentChallenge(1);
+                  setChallengeResults([]);
+                  setGameComplete(false);
+                  startFlashAnzan(level.id);
+                }}
+                className={`bg-gradient-to-br ${level.color} rounded-2xl p-4 shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95 transition-all text-white flex flex-col items-center justify-center relative overflow-hidden group`}
+              >
+                {index === 0 && (
+                  <div className="absolute top-1 right-1 bg-green-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    Gợi ý
+                  </div>
+                )}
+                <div className="text-4xl mb-2">{level.emoji}</div>
+                <div className="font-black text-lg">{level.name}</div>
+                <div className="text-xs opacity-80 text-center mt-1">
+                  {level.numbers[0]}-{level.numbers[1]} số • {level.digits} chữ số • {level.speed[0]}-{level.speed[1]}s/số
+                </div>
+                <div className="flex items-center gap-1 mt-2 bg-white/20 px-2 py-0.5 rounded-full">
+                  <span className="text-yellow-300">⭐</span>
+                  <span className="text-xs font-bold">x{level.stars}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Hint */}
+          <div className="mt-6 text-center">
+            <p className="text-white/60 text-sm">
+              💡 Mẹo: Bắt đầu với <span className="text-yellow-400 font-bold">Tia Sáng</span> để làm quen, sau đó tăng dần độ khó!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Màn hình chơi Flash Anzan
+  if (mode === 'flashAnzan' && flashLevel && !gameComplete) {
+    const config = flashLevels.find(l => l.id === flashLevel);
+    
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-900 via-orange-900 to-red-900">
+        {/* Celebration Popup */}
+        {celebration === 'correct' && celebrationData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="text-center animate-scale-up">
+              <div className="text-7xl sm:text-8xl mb-3 animate-bounce drop-shadow-2xl">
+                {celebrationData.emoji}
+              </div>
+              <div className={`text-3xl sm:text-4xl font-black mb-2 drop-shadow-lg animate-pulse ${celebrationData.tierTextColor}`}>
+                {celebrationData.text}
+              </div>
+              <div className="flex justify-center gap-1 mb-2">
+                {[...Array(Math.min(5, celebrationData.starsEarned))].map((_, i) => (
+                  <span key={i} className="text-3xl animate-spin-slow" style={{ animationDelay: `${i * 0.1}s` }}>
+                    ⭐
+                  </span>
+                ))}
+              </div>
+              <div className={`text-xl sm:text-2xl font-bold ${celebrationData.tierTextColor}`}>
+                +{celebrationData.starsEarned} sao
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top bar */}
+        <div className={`bg-gradient-to-r ${config?.color || 'from-yellow-500 to-orange-600'} shadow-lg flex-shrink-0`}>
+          <div className="max-w-6xl mx-auto px-3 py-2 flex items-center gap-3">
+            {/* Left */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button 
+                onClick={() => {
+                  if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+                  setMode(null);
+                  setFlashLevel(null);
+                  setFlashPhase('idle');
+                }} 
+                className="p-1.5 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center gap-1"
+              >
+                <ArrowLeft size={16} />
+                <span className="text-sm font-medium">Thoát</span>
+              </button>
+            </div>
+            
+            {/* Center: Info */}
+            <div className="flex-1 text-center">
+              <div className="text-white font-black text-lg flex items-center justify-center gap-2">
+                <span>⚡</span> {config?.name} <span>{config?.emoji}</span>
+              </div>
+              <div className="text-white/70 text-xs">
+                Cấp {flashLevels.findIndex(l => l.id === flashLevel) + 1} - {difficultyInfo[1]?.label}
+              </div>
+            </div>
+            
+            {/* Right: Progress */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="text-white/80 text-sm">
+                Câu {currentChallenge}/{TOTAL_CHALLENGES}
+              </div>
+              <div className="bg-yellow-400/90 text-yellow-900 px-2 py-0.5 rounded-full font-bold text-xs shadow">
+                ⭐ {sessionStats.stars}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex-shrink-0 bg-black/20 px-3 py-2">
+          <div className="flex gap-1 max-w-6xl mx-auto">
+            {[...Array(TOTAL_CHALLENGES)].map((_, i) => {
+              const resultStatus = challengeResults[i];
+              let dotClass = 'bg-white/30';
+              if (i < currentChallenge - 1) {
+                dotClass = resultStatus === 'correct' ? 'bg-green-400' : 'bg-red-400';
+              } else if (i === currentChallenge - 1 && flashPhase !== 'idle') {
+                dotClass = 'bg-white animate-pulse';
+              }
+              return <div key={i} className={`h-2 flex-1 rounded-full ${dotClass}`} />;
+            })}
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          
+          {/* Countdown phase */}
+          {flashPhase === 'countdown' && (
+            <div className="text-center">
+              <div className="text-9xl font-black text-yellow-400 animate-pulse mb-4">
+                {flashCountdown}
+              </div>
+              <p className="text-white text-xl font-bold">Chuẩn bị nhìn số!</p>
+              <div className="flex items-center justify-center gap-4 mt-4 text-white/70">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                  <span>📊</span>
+                  <span>{flashNumbers.length} số</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                  <span>⚡</span>
+                  <span>{config?.speed[0]}-{config?.speed[1]}s/số</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Showing numbers phase */}
+          {flashPhase === 'showing' && (
+            <div className="text-center">
+              {flashShowingNumber !== null ? (
+                <div className="text-8xl sm:text-9xl font-black text-white animate-pulse drop-shadow-2xl">
+                  {flashShowingNumber}
+                </div>
+              ) : (
+                <div className="text-6xl text-white/30">...</div>
+              )}
+              <div className="mt-4 text-white/60 text-sm">
+                Số {flashCurrentIndex + 1}/{flashNumbers.length}
+              </div>
+            </div>
+          )}
+
+          {/* Answer phase */}
+          {flashPhase === 'answer' && (
+            <div className="text-center w-full max-w-md">
+              <div className="text-5xl mb-4">🧠</div>
+              <h2 className="text-2xl font-bold text-white mb-2">Tổng là bao nhiêu?</h2>
+              <div className="flex items-center justify-center gap-4 mb-6 text-white/70 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                  <span>📊</span>
+                  <span>{flashNumbers.length} số đã hiện</span>
+                </div>
+              </div>
+              
+              {/* Input */}
+              <input
+                ref={flashInputRef}
+                type="text"
+                inputMode="numeric"
+                value={flashAnswer}
+                onChange={(e) => {
+                  if (/^\d*$/.test(e.target.value)) {
+                    setFlashAnswer(e.target.value);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && flashAnswer) {
+                    handleFlashSubmit();
+                  }
+                }}
+                placeholder="?"
+                autoFocus
+                className="w-full text-4xl font-black text-center py-4 px-6 rounded-2xl bg-white/90 text-amber-900 outline-none focus:ring-4 focus:ring-yellow-400"
+              />
+              
+              {/* Submit button */}
+              <button
+                onClick={handleFlashSubmit}
+                disabled={!flashAnswer}
+                className="mt-4 w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-xl rounded-2xl hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                ⚡ Trả lời
+              </button>
+              
+              <p className="mt-3 text-white/50 text-sm">
+                💡 Nhấn Enter để trả lời nhanh
+              </p>
+            </div>
+          )}
+
+          {/* Result phase */}
+          {flashPhase === 'result' && (
+            <div className="text-center">
+              <div className="text-6xl mb-4">
+                {result ? '🎉' : '😅'}
+              </div>
+              <div className={`text-3xl font-black mb-2 ${result ? 'text-green-400' : 'text-red-400'}`}>
+                {result ? 'CHÍNH XÁC!' : 'SAI RỒI!'}
+              </div>
+              
+              <div className="bg-white/10 rounded-2xl p-4 mb-4 inline-block">
+                <div className="text-white/70 text-sm mb-1">Đáp án đúng</div>
+                <div className="text-4xl font-black text-yellow-400">{flashCorrectAnswer}</div>
+                {!result && (
+                  <div className="text-white/50 text-sm mt-1">
+                    Bạn trả lời: {flashAnswer}
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-white/60 text-sm mb-4">
+                Các số: {flashNumbers.join(' + ')}
+              </div>
+              
+              <button
+                onClick={nextFlashChallenge}
+                className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-lg"
+              >
+                {currentChallenge >= TOTAL_CHALLENGES ? '🏆 Xem kết quả' : '⚡ Câu tiếp theo'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom stats */}
+        <div className="flex-shrink-0 bg-black/30 px-4 py-3">
+          <div className="max-w-6xl mx-auto flex justify-center gap-8">
+            <div className="text-center">
+              <div className="text-2xl font-black text-yellow-400">{sessionStats.stars}</div>
+              <div className="text-white/60 text-xs">⭐ Sao</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-black text-green-400">{sessionStats.correct}/{sessionStats.total}</div>
+              <div className="text-white/60 text-xs">✓ Đúng</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-black text-orange-400">{streak}</div>
+              <div className="text-white/60 text-xs">🔥 Combo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Game Complete Screen cho Flash Anzan
+  if (mode === 'flashAnzan' && gameComplete) {
+    const accuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
+    const grade = accuracy >= 90 ? 'S' : accuracy >= 70 ? 'A' : accuracy >= 50 ? 'B' : 'C';
+    const gradeColors = { S: 'text-yellow-400', A: 'text-green-400', B: 'text-blue-400', C: 'text-gray-400' };
+    const gradeEmojis = { S: '👑', A: '🌟', B: '⭐', C: '💪' };
+    const gradeTexts = { S: 'XUẤT SẮC!', A: 'GIỎI LẮM!', B: 'KHÁ TỐT!', C: 'CỐ GẮNG THÊM!' };
+    
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-amber-900 via-orange-900 to-red-900 p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 max-w-md w-full text-center">
+          <div className="text-6xl mb-3 animate-bounce">{gradeEmojis[grade]}</div>
+          <h1 className="text-3xl font-black text-white mb-1">HOÀN THÀNH!</h1>
+          <p className="text-white/70 mb-3">Flash Anzan - {flashLevels.find(l => l.id === flashLevel)?.name}</p>
+          
+          <div className={`text-5xl font-black ${gradeColors[grade]} mb-4`}>
+            {gradeTexts[grade]}
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-white/10 rounded-xl p-3">
+              <div className="text-2xl">⭐</div>
+              <div className="text-2xl font-black text-yellow-400">{sessionStats.stars}</div>
+              <div className="text-xs text-white/60">Sao</div>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <div className="text-2xl">✓</div>
+              <div className="text-2xl font-black text-green-400">{sessionStats.correct}/{TOTAL_CHALLENGES}</div>
+              <div className="text-xs text-white/60">Đúng</div>
+            </div>
+            <div className="bg-white/10 rounded-xl p-3">
+              <div className="text-2xl">🔥</div>
+              <div className="text-2xl font-black text-orange-400">{maxStreak}</div>
+              <div className="text-xs text-white/60">Combo</div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={restartFlashGame}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:scale-105 transition-transform"
+            >
+              🔄 Chơi lại
+            </button>
+            <button
+              onClick={() => {
+                setFlashLevel(null);
+                setFlashPhase('idle');
+                setGameComplete(false);
+              }}
+              className="flex-1 py-3 px-4 bg-white/20 text-white font-bold rounded-xl hover:bg-white/30 transition-colors"
+            >
+              📋 Chọn cấp
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Mode selection screen - Game hóa, vừa đủ màn hình
   if (!mode) {
     return (
@@ -717,7 +1310,8 @@ export default function PracticePage() {
               { mode: 'division', title: 'Siêu Chia', icon: '🍕', symbol: '÷', color: 'from-rose-400 to-red-500', desc: 'Chia đều!' },
               { mode: 'mulDiv', title: 'Nhân Chia Mix', icon: '🎩', symbol: '×÷', color: 'from-amber-400 to-orange-500', desc: 'Phép thuật!' },
               { mode: 'mixed', title: 'Tứ Phép Thần', icon: '👑', symbol: '∞', color: 'from-indigo-500 to-purple-600', desc: 'Boss cuối!' },
-              { mode: 'mentalMath', title: 'Siêu Trí Tuệ', icon: '🧠', symbol: '💭', color: 'from-violet-500 to-fuchsia-600', desc: 'Không bàn tính!', special: true }
+              { mode: 'mentalMath', title: 'Siêu Trí Tuệ', icon: '🧠', symbol: '💭', color: 'from-violet-500 to-fuchsia-600', desc: 'Không bàn tính!', special: true },
+              { mode: 'flashAnzan', title: 'Tia Chớp', icon: '⚡', symbol: '💫', color: 'from-yellow-500 to-orange-600', desc: 'Flash Anzan!', special: true },
             ].map(item => (
               <button
                 key={item.mode}
